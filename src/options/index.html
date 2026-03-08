@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub Team Visualizer</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <p class="eyebrow">Chrome Extension Configuration</p>
+        <h1>GitHub Team Visualizer</h1>
+        <p class="lede">
+          Track one GitHub org, highlight the teams that matter, and surface current issue load directly in issue and PR discussions.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Core Settings</h2>
+            <p>Store the org, token, and refresh cadence used by the background service worker.</p>
+          </div>
+          <button id="save-config" class="button button--primary" type="button">Save configuration</button>
+        </div>
+
+        <form id="config-form" class="config-form">
+          <label class="field">
+            <span>GitHub organization</span>
+            <input id="org" name="org" type="text" placeholder="mycompany" autocomplete="off" />
+          </label>
+
+          <label class="field">
+            <span>Personal access token</span>
+            <div class="token-field">
+              <input id="github-token" name="githubToken" type="password" placeholder="ghp_..." autocomplete="off" />
+              <button id="toggle-token" class="button button--ghost" type="button">Show</button>
+            </div>
+          </label>
+
+          <label class="field">
+            <span>Refresh interval (minutes)</span>
+            <input id="refresh-interval" name="refreshIntervalMinutes" type="number" min="5" step="1" />
+          </label>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Tracked Teams</h2>
+            <p>Array order controls primary-team precedence when a user matches more than one configured team.</p>
+          </div>
+          <button id="add-team" class="button button--secondary" type="button">Add team</button>
+        </div>
+
+        <div id="teams-list" class="teams-list"></div>
+      </section>
+
+      <section class="panel panel--status">
+        <h2>Health and Guidance</h2>
+        <div id="status-card" class="status-card">
+          <strong>Status unavailable</strong>
+          <p>Save a configuration to initialize the service worker.</p>
+        </div>
+        <ul class="guidance-list">
+          <li>Use the least-privilege token that can read org team membership and issue assignment data.</li>
+          <li>For private orgs, verify the token can see the target repos and the organization teams you configured.</li>
+          <li>When the GitHub API fails, the extension falls back to cached data and marks it stale.</li>
+        </ul>
+      </section>
+    </main>
+
+    <template id="team-row-template">
+      <article class="team-row">
+        <label class="field">
+          <span>Team slug</span>
+          <input data-field="slug" type="text" placeholder="platform" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Badge label</span>
+          <input data-field="label" type="text" placeholder="Platform" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Color</span>
+          <select data-field="color"></select>
+        </label>
+        <button data-action="remove" class="button button--ghost button--danger" type="button">Remove</button>
+      </article>
+    </template>
+
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>
