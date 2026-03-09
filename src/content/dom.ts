@@ -118,11 +118,11 @@ function insertAfter(node: Node, reference: Node): void {
   }
 }
 
-function createPill(label: string, variant: "team" | "workload", color?: TeamColor, stale?: boolean): HTMLElement {
+function createPill(label: string, color?: TeamColor, stale?: boolean): HTMLElement {
   const pill = document.createElement("span");
-  pill.className = `Label team-pilled-pill team-pilled-pill--${variant}`;
+  pill.className = "Label team-pilled-pill";
 
-  if (variant === "team" && color) {
+  if (color) {
     pill.classList.add(TEAM_COLOR_CLASS_MAP[color]);
   }
 
@@ -133,6 +133,18 @@ function createPill(label: string, variant: "team" | "workload", color?: TeamCol
 
   pill.textContent = label;
   return pill;
+}
+
+function formatPillLabel(data: UserBadgeData): string {
+  if (!data.primaryTeam) {
+    return "";
+  }
+
+  if (typeof data.openIssueCount === "number") {
+    return `${data.primaryTeam.label} · ${data.openIssueCount}`;
+  }
+
+  return data.primaryTeam.label;
 }
 
 export function renderUserBadges(root: ParentNode, users: Record<string, UserBadgeData>): number {
@@ -158,11 +170,7 @@ export function renderUserBadges(root: ParentNode, users: Record<string, UserBad
     group.className = "team-pilled-group";
     group.dataset.teamPilledGroup = "true";
     group.dataset.teamPilledUsername = username;
-    group.append(createPill(data.primaryTeam.label, "team", data.primaryTeam.color, data.stale));
-
-    if (typeof data.openIssueCount === "number") {
-      group.append(createPill(`[${data.openIssueCount} issues]`, "workload", undefined, data.stale));
-    }
+    group.append(createPill(formatPillLabel(data), data.primaryTeam.color, data.stale));
 
     if (isLegacyHeader(header)) {
       const timestamp = metaRow.querySelector(".js-timestamp");

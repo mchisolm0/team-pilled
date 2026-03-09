@@ -24,12 +24,6 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
-.team-pilled-pill--workload {
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-accent-subtle, #ddf4ff) 55%, transparent), transparent),
-    var(--team-pilled-bg);
-}
-
 .team-pilled-pill--gray {
   background:
     linear-gradient(135deg, rgba(107, 114, 128, 0.18), transparent),

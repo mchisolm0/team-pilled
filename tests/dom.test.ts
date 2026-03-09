@@ -39,10 +39,13 @@ describe("content DOM rendering", () => {
     const group = metaRow?.querySelector<HTMLElement>("[data-team-pilled-group='true']");
     const collaborator = metaRow?.querySelector(".Label:not(.team-pilled-pill)");
     const timestamp = metaRow?.querySelector(".js-timestamp");
+    const pills = metaRow?.querySelectorAll(".team-pilled-pill");
 
     expect(rendered).toBe(1);
     expect(group?.textContent).toContain("Platform");
-    expect(group?.textContent).toContain("[12 issues]");
+    expect(group?.textContent).toContain("12");
+    expect(group?.textContent).not.toContain("issues");
+    expect(pills).toHaveLength(1);
     expect(collaborator?.compareDocumentPosition(group as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(group?.compareDocumentPosition(timestamp as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -59,10 +62,12 @@ describe("content DOM rendering", () => {
     });
 
     const group = document.querySelector<HTMLElement>("[data-team-pilled-group='true']");
+    const pills = document.querySelectorAll(".team-pilled-pill");
 
     expect(rendered).toBe(1);
     expect(group?.textContent).toContain("Platform");
     expect(group?.textContent).not.toContain("issues");
+    expect(pills).toHaveLength(1);
   });
 
   it("does not duplicate pills across repeated renders and handles dynamically added comments", () => {
@@ -112,7 +117,9 @@ describe("content DOM rendering", () => {
     expect(rendered).toBe(1);
     expect(collectDiscussionUsernames(document)).toEqual(["mchisolm0"]);
     expect(badgeGroup?.textContent).toContain("Reviewers");
-    expect(badgeGroup?.textContent).toContain("[4 issues]");
+    expect(badgeGroup?.textContent).toContain("4");
+    expect(badgeGroup?.textContent).not.toContain("issues");
+    expect(badgeGroup?.querySelectorAll(".team-pilled-pill")).toHaveLength(1);
     expect(banner?.textContent).toContain("public GitHub API rate limit");
   });
 
@@ -140,7 +147,10 @@ describe("content DOM rendering", () => {
     expect(rendered).toBe(2);
     expect(collectDiscussionUsernames(document)).toEqual(["mchisolm0", "octocat"]);
     expect(firstBadgeContainer?.textContent).toContain("Platform");
-    expect(firstBadgeContainer?.textContent).toContain("[2 issues]");
+    expect(firstBadgeContainer?.textContent).toContain("2");
+    expect(firstBadgeContainer?.textContent).not.toContain("issues");
+    expect(firstBadgeContainer?.querySelectorAll(".team-pilled-pill")).toHaveLength(1);
     expect(secondBadgeContainer?.textContent).toContain("Infra");
+    expect(secondBadgeContainer?.querySelectorAll(".team-pilled-pill")).toHaveLength(1);
   });
 });
