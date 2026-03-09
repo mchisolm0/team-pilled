@@ -15,6 +15,8 @@ const form = document.getElementById("config-form") as HTMLFormElement;
 const groupsList = document.getElementById("groups-list") as HTMLDivElement;
 const template = document.getElementById("group-row-template") as HTMLTemplateElement;
 const statusCard = document.getElementById("status-card") as HTMLDivElement;
+const showIssueCountsField = document.getElementById("show-issue-counts") as HTMLInputElement;
+const issueCountCacheMinutesField = document.getElementById("issue-count-cache-minutes") as HTMLInputElement;
 
 function sendMessage<T>(message: unknown): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -45,6 +47,10 @@ function moveRow(row: HTMLElement, direction: -1 | 1): void {
   }
 }
 
+function titleCase(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 function createGroupRow(group?: ExtensionConfig["groups"][number]): HTMLElement {
   const fragment = template.content.cloneNode(true) as DocumentFragment;
   const row = fragment.querySelector<HTMLElement>(".group-row");
@@ -54,11 +60,12 @@ function createGroupRow(group?: ExtensionConfig["groups"][number]): HTMLElement 
   }
 
   const colorSelect = row.querySelector<HTMLSelectElement>('select[data-field="color"]');
+
   if (!colorSelect) {
     throw new Error("Missing group color select.");
   }
 
-  colorSelect.innerHTML = TEAM_COLOR_OPTIONS.map((color) => `<option value="${color}">${color}</option>`).join("");
+  colorSelect.innerHTML = TEAM_COLOR_OPTIONS.map((color) => `<option value="${color}">${titleCase(color)}</option>`).join("");
 
   const labelInput = row.querySelector<HTMLInputElement>('input[data-field="label"]');
   const usernamesInput = row.querySelector<HTMLTextAreaElement>('textarea[data-field="usernames"]');
@@ -103,8 +110,8 @@ function readConfigFromForm(): ExtensionConfig {
   const groupRows = [...groupsList.querySelectorAll<HTMLElement>(".group-row")];
 
   return {
-    showIssueCounts: (document.getElementById("show-issue-counts") as HTMLInputElement).checked,
-    issueCountCacheMinutes: Number((document.getElementById("issue-count-cache-minutes") as HTMLInputElement).value),
+    showIssueCounts: showIssueCountsField.checked,
+    issueCountCacheMinutes: Number(issueCountCacheMinutesField.value),
     groups: groupRows.map((row) => ({
       label: row.querySelector<HTMLInputElement>('input[data-field="label"]')?.value ?? "",
       color: (row.querySelector<HTMLSelectElement>('select[data-field="color"]')?.value ?? "gray") as ExtensionConfig["groups"][number]["color"],
@@ -114,10 +121,8 @@ function readConfigFromForm(): ExtensionConfig {
 }
 
 function renderConfig(config: Partial<ExtensionConfig> | null): void {
-  (document.getElementById("show-issue-counts") as HTMLInputElement).checked = config?.showIssueCounts ?? true;
-  (document.getElementById("issue-count-cache-minutes") as HTMLInputElement).value = String(
-    config?.issueCountCacheMinutes ?? DEFAULT_ISSUE_COUNT_CACHE_MINUTES
-  );
+  showIssueCountsField.checked = config?.showIssueCounts ?? true;
+  issueCountCacheMinutesField.value = String(config?.issueCountCacheMinutes ?? DEFAULT_ISSUE_COUNT_CACHE_MINUTES);
   groupsList.innerHTML = "";
 
   for (const group of config?.groups ?? []) {
@@ -134,7 +139,14 @@ function renderStatus(status: SyncState["status"], message: string, updatedAt?: 
   statusCard.innerHTML = "";
 
   const title = document.createElement("strong");
-  title.textContent = status.replaceAll("_", " ");
+  title.textContent =
+    status === "ok"
+      ? "Saved"
+      : status === "config_error"
+        ? "Configuration error"
+        : status === "rate_limited"
+          ? "Rate limited"
+          : "Needs attention";
 
   const body = document.createElement("p");
   body.textContent = updatedAt ? `${message} Last updated ${new Date(updatedAt).toLocaleString()}.` : message;

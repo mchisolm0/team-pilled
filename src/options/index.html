@@ -8,75 +8,67 @@
   </head>
   <body>
     <main class="app-shell">
-      <section class="hero">
-        <p class="eyebrow">Chrome Extension Configuration</p>
-        <h1>GitHub Team Visualizer</h1>
-        <p class="lede">
-          Configure manual GitHub groups, highlight them in issue and pull request discussions, and optionally show public
-          repo issue counts.
-        </p>
-      </section>
-
       <section class="panel">
-        <div class="panel-heading">
+        <header class="page-header">
           <div>
-            <h2>Core Settings</h2>
-            <p>No token is required. Issue counts use the public GitHub API and are cached locally.</p>
+            <h1>Team Pilled</h1>
+            <p>Create named GitHub groups, pick a color, and paste usernames.</p>
           </div>
-          <button id="save-config" class="button button--primary" type="button">Save configuration</button>
-        </div>
+          <button id="save-config" class="button button--primary" type="button">Save</button>
+        </header>
 
         <form id="config-form" class="config-form">
-          <label class="field field--checkbox">
-            <span>Show issue counts</span>
-            <input id="show-issue-counts" name="showIssueCounts" type="checkbox" checked />
-          </label>
+          <section class="section">
+            <div class="section-header">
+              <div>
+                <h2>Groups</h2>
+                <p>The first matching group wins when a user appears in more than one list.</p>
+              </div>
+              <button id="add-group" class="button button--secondary" type="button">Add group</button>
+            </div>
 
-          <label class="field">
-            <span>Issue count cache TTL (minutes)</span>
-            <input id="issue-count-cache-minutes" name="issueCountCacheMinutes" type="number" min="5" step="1" />
-          </label>
+            <div id="groups-list" class="groups-list"></div>
+          </section>
+
+          <details class="section section--advanced">
+            <summary>Advanced</summary>
+            <div class="advanced-grid">
+              <label class="field field--checkbox">
+                <span>Show issue counts</span>
+                <input id="show-issue-counts" name="showIssueCounts" type="checkbox" checked />
+              </label>
+
+              <label class="field">
+                <span>Issue count cache TTL (minutes)</span>
+                <input id="issue-count-cache-minutes" name="issueCountCacheMinutes" type="number" min="5" step="1" />
+              </label>
+            </div>
+          </details>
         </form>
       </section>
 
-      <section class="panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Manual Groups</h2>
-            <p>Group order controls precedence when the same username appears in more than one group.</p>
-          </div>
-          <button id="add-group" class="button button--secondary" type="button">Add group</button>
-        </div>
-
-        <div id="groups-list" class="groups-list"></div>
-      </section>
-
-      <section class="panel panel--status">
-        <h2>Health and Guidance</h2>
+      <section class="status-strip">
         <div id="status-card" class="status-card">
           <strong>Status unavailable</strong>
           <p>Save a configuration to initialize the extension.</p>
         </div>
-        <ul class="guidance-list">
-          <li>No token is required for public-repo issue counts.</li>
-          <li>Public GitHub API rate limits may temporarily hide issue-count pills while group pills still render.</li>
-          <li>If the same username appears in multiple groups, the first group wins.</li>
-        </ul>
       </section>
     </main>
 
     <template id="group-row-template">
       <article class="group-row">
         <label class="field">
-          <span>Badge label</span>
+          <span>Name</span>
           <input data-field="label" type="text" placeholder="Platform" autocomplete="off" />
         </label>
+
         <label class="field">
           <span>Color</span>
           <select data-field="color"></select>
         </label>
+
         <label class="field field--wide">
-          <span>GitHub usernames</span>
+          <span>Usernames</span>
           <textarea
             data-field="usernames"
             rows="4"
@@ -84,9 +76,10 @@
             autocomplete="off"
           ></textarea>
         </label>
+
         <div class="row-actions">
-          <button data-action="move-up" class="button button--ghost" type="button">Move up</button>
-          <button data-action="move-down" class="button button--ghost" type="button">Move down</button>
+          <button data-action="move-up" class="button button--ghost" type="button">Up</button>
+          <button data-action="move-down" class="button button--ghost" type="button">Down</button>
           <button data-action="remove" class="button button--ghost button--danger" type="button">Remove</button>
         </div>
       </article>
