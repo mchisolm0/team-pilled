@@ -3,9 +3,12 @@ import type { SyncStatus, TeamColor, UserBadgeData } from "../shared/types";
 const SUPPORTED_PAGE_PATTERN = /^\/([^/]+)\/([^/]+)\/(?:issues|pull)\/\d+$/;
 const BANNER_ID = "team-pilled-banner";
 const LEGACY_HEADER_SELECTOR = ".timeline-comment-header";
-const MODERN_HEADER_SELECTOR = "[class*='IssueBodyHeader-module__IssueBodyHeaderContainer__']";
+const MODERN_ISSUE_HEADER_SELECTOR = "[class*='IssueBodyHeader-module__IssueBodyHeaderContainer__']";
+const MODERN_ACTIVITY_HEADER_SELECTOR = "[class*='ActivityHeader-module__activityHeader__']";
 const MODERN_AUTHOR_SELECTOR = "[class*='IssueBodyHeaderAuthor-module__authorLoginLink__']";
+const MODERN_ACTIVITY_AUTHOR_SELECTOR = "[class*='ActivityHeader-module__AuthorName__']";
 const MODERN_BADGE_GROUP_SELECTOR = "[class*='IssueBodyHeader-module__badgeGroup__']";
+const MODERN_ACTIVITY_BADGE_CONTAINER_SELECTOR = "[class*='ActivityHeader-module__BadgesGroupContainer__']";
 const MODERN_BADGES_SECTION_SELECTOR = "[class*='IssueBodyHeader-module__badgesSection__']";
 const MODERN_DATE_SELECTOR = "[class*='IssueBodyHeader-module__dateLink__']";
 const MODERN_TITLE_SECTION_SELECTOR = "[class*='IssueBodyHeader-module__titleSection__']";
@@ -38,10 +41,16 @@ export function parseRepoContext(locationLike: Pick<Location, "pathname">): { ow
 }
 
 function getDiscussionHeaders(root: ParentNode): HTMLElement[] {
+  const issueHeaders = [...root.querySelectorAll<HTMLElement>(MODERN_ISSUE_HEADER_SELECTOR)];
+  const activityHeaders = [...root.querySelectorAll<HTMLElement>(MODERN_ACTIVITY_HEADER_SELECTOR)].filter(
+    (header) => !header.closest(MODERN_ISSUE_HEADER_SELECTOR)
+  );
+
   return [
     ...new Set([
       ...root.querySelectorAll<HTMLElement>(LEGACY_HEADER_SELECTOR),
-      ...root.querySelectorAll<HTMLElement>(MODERN_HEADER_SELECTOR)
+      ...issueHeaders,
+      ...activityHeaders
     ])
   ];
 }
@@ -72,6 +81,7 @@ function findAuthorLink(header: HTMLElement): HTMLAnchorElement | null {
 
   return (
     header.querySelector<HTMLAnchorElement>(MODERN_AUTHOR_SELECTOR) ??
+    header.querySelector<HTMLAnchorElement>(MODERN_ACTIVITY_AUTHOR_SELECTOR) ??
     header.querySelector<HTMLAnchorElement>("a[href^='https://github.com/']") ??
     header.querySelector<HTMLAnchorElement>("a[href^='/']")
   );
@@ -86,6 +96,7 @@ function findMetaRow(header: HTMLElement): HTMLElement | null {
   }
 
   return (
+    header.querySelector<HTMLElement>(MODERN_ACTIVITY_BADGE_CONTAINER_SELECTOR) ??
     header.querySelector<HTMLElement>(MODERN_BADGE_GROUP_SELECTOR) ??
     header.querySelector<HTMLElement>(MODERN_BADGES_SECTION_SELECTOR) ??
     header.querySelector<HTMLElement>(MODERN_TITLE_SECTION_SELECTOR)
@@ -94,6 +105,7 @@ function findMetaRow(header: HTMLElement): HTMLElement | null {
 
 function findModernBadgeContainer(header: HTMLElement): HTMLElement | null {
   return (
+    header.querySelector<HTMLElement>(MODERN_ACTIVITY_BADGE_CONTAINER_SELECTOR) ??
     header.querySelector<HTMLElement>(MODERN_BADGE_GROUP_SELECTOR) ??
     header.querySelector<HTMLElement>(MODERN_BADGES_SECTION_SELECTOR) ??
     header.querySelector<HTMLElement>(MODERN_TITLE_SECTION_SELECTOR)

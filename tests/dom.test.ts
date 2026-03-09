@@ -3,6 +3,7 @@ import { collectDiscussionUsernames, parseRepoContext, renderUserBadges, setStat
 import {
   dynamicCommentFixture,
   issueCommentFixture,
+  modernActivityCommentFixture,
   modernIssueHeaderFixture,
   prBodyFixture,
   reviewCommentFixture
@@ -113,5 +114,33 @@ describe("content DOM rendering", () => {
     expect(badgeGroup?.textContent).toContain("Reviewers");
     expect(badgeGroup?.textContent).toContain("[4 issues]");
     expect(banner?.textContent).toContain("public GitHub API rate limit");
+  });
+
+  it("renders badges into modern activity comment headers for every visible matching comment", () => {
+    document.body.innerHTML = modernActivityCommentFixture + modernActivityCommentFixture.replaceAll("mchisolm0", "octocat");
+
+    const rendered = renderUserBadges(document, {
+      mchisolm0: {
+        username: "mchisolm0",
+        primaryTeam: { label: "Platform", color: "blue", usernames: ["mchisolm0"] },
+        openIssueCount: 2,
+        stale: false
+      },
+      octocat: {
+        username: "octocat",
+        primaryTeam: { label: "Infra", color: "green", usernames: ["octocat"] },
+        stale: false
+      }
+    });
+
+    const commentHeaders = document.querySelectorAll("[class*='ActivityHeader-module__activityHeader__']");
+    const firstBadgeContainer = commentHeaders[0]?.querySelector("[class*='ActivityHeader-module__BadgesGroupContainer__']");
+    const secondBadgeContainer = commentHeaders[1]?.querySelector("[class*='ActivityHeader-module__BadgesGroupContainer__']");
+
+    expect(rendered).toBe(2);
+    expect(collectDiscussionUsernames(document)).toEqual(["mchisolm0", "octocat"]);
+    expect(firstBadgeContainer?.textContent).toContain("Platform");
+    expect(firstBadgeContainer?.textContent).toContain("[2 issues]");
+    expect(secondBadgeContainer?.textContent).toContain("Infra");
   });
 });
