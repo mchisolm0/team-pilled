@@ -11,16 +11,15 @@ export const TEAM_COLOR_OPTIONS = [
 export type TeamColor = (typeof TEAM_COLOR_OPTIONS)[number];
 
 export type TeamConfig = {
-  slug: string;
   label: string;
   color: TeamColor;
+  usernames: string[];
 };
 
 export type ExtensionConfig = {
-  org: string;
-  githubToken: string;
-  refreshIntervalMinutes: number;
-  teams: TeamConfig[];
+  groups: TeamConfig[];
+  showIssueCounts: boolean;
+  issueCountCacheMinutes: number;
 };
 
 export type UserBadgeData = {
@@ -30,12 +29,7 @@ export type UserBadgeData = {
   stale: boolean;
 };
 
-export type SyncStatus =
-  | "ok"
-  | "degraded"
-  | "config_error"
-  | "auth_error"
-  | "rate_limited";
+export type SyncStatus = "ok" | "degraded" | "config_error" | "rate_limited";
 
 export type SyncState = {
   status: SyncStatus;
@@ -58,65 +52,60 @@ export type ConfigValidationResult =
       message: string;
     };
 
-export const DEFAULT_REFRESH_INTERVAL_MINUTES = 15;
-export const MIN_REFRESH_INTERVAL_MINUTES = 5;
+export const DEFAULT_ISSUE_COUNT_CACHE_MINUTES = 30;
+export const MIN_ISSUE_COUNT_CACHE_MINUTES = 5;
 
 export function isTeamColor(value: string): value is TeamColor {
   return TEAM_COLOR_OPTIONS.includes(value as TeamColor);
 }
 
+function normalizeUsernames(usernames: string[] | null | undefined): string[] {
+  return [...new Set((usernames ?? []).map((username) => username.trim().toLowerCase()).filter(Boolean))];
+}
+
 export function sanitizeConfig(input: Partial<ExtensionConfig> | null | undefined): ExtensionConfig {
+  const groupsInput = Array.isArray((input as { groups?: unknown } | null | undefined)?.groups) ? input?.groups ?? [] : [];
+
   return {
-    org: input?.org?.trim() ?? "",
-    githubToken: input?.githubToken?.trim() ?? "",
-    refreshIntervalMinutes:
-      input?.refreshIntervalMinutes && Number.isFinite(input.refreshIntervalMinutes)
-        ? Math.max(MIN_REFRESH_INTERVAL_MINUTES, Math.floor(input.refreshIntervalMinutes))
-        : DEFAULT_REFRESH_INTERVAL_MINUTES,
-    teams:
-      input?.teams?.map((team) => ({
-        slug: team.slug.trim(),
-        label: team.label.trim(),
-        color: isTeamColor(team.color) ? team.color : "gray"
-      })) ?? []
+    showIssueCounts: input?.showIssueCounts ?? true,
+    issueCountCacheMinutes:
+      input?.issueCountCacheMinutes && Number.isFinite(input.issueCountCacheMinutes)
+        ? Math.max(MIN_ISSUE_COUNT_CACHE_MINUTES, Math.floor(input.issueCountCacheMinutes))
+        : DEFAULT_ISSUE_COUNT_CACHE_MINUTES,
+    groups: groupsInput.map((group) => ({
+      label: group.label.trim(),
+      color: isTeamColor(group.color) ? group.color : "gray",
+      usernames: normalizeUsernames(group.usernames)
+    }))
   };
 }
 
 export function validateConfig(input: Partial<ExtensionConfig> | null | undefined): ConfigValidationResult {
+  if (input && "org" in input) {
+    return {
+      valid: false,
+      message: "Legacy configuration detected. Re-enter your manual groups in the updated options page."
+    };
+  }
+
   const config = sanitizeConfig(input);
 
-  if (!config.org) {
-    return { valid: false, message: "Organization is required." };
+  if (config.groups.length === 0) {
+    return { valid: false, message: "At least one group is required." };
   }
 
-  if (!config.githubToken) {
-    return { valid: false, message: "GitHub token is required." };
-  }
-
-  if (config.teams.length === 0) {
-    return { valid: false, message: "At least one team is required." };
-  }
-
-  const seenSlugs = new Set<string>();
-
-  for (const team of config.teams) {
-    if (!team.slug) {
-      return { valid: false, message: "Each team needs a slug." };
+  for (const group of config.groups) {
+    if (!group.label) {
+      return { valid: false, message: "Each group needs a badge label." };
     }
 
-    if (!team.label) {
-      return { valid: false, message: "Each team needs a label." };
+    if (!isTeamColor(group.color)) {
+      return { valid: false, message: `Invalid group color: ${group.color}.` };
     }
 
-    if (!isTeamColor(team.color)) {
-      return { valid: false, message: `Invalid team color: ${team.color}.` };
+    if (group.usernames.length === 0) {
+      return { valid: false, message: `Group "${group.label}" needs at least one GitHub username.` };
     }
-
-    if (seenSlugs.has(team.slug)) {
-      return { valid: false, message: `Duplicate team slug: ${team.slug}.` };
-    }
-
-    seenSlugs.add(team.slug);
   }
 
   return {

@@ -2,16 +2,16 @@
 
 GitHub Team Visualizer is a Chrome Manifest V3 extension that annotates GitHub issue and pull request discussions with:
 
-- a primary team badge for users on configured GitHub teams
-- an org-scoped open issue count pill for those users
-- cached fallback behavior when GitHub API calls fail or hit rate limits
+- a manual group badge for configured GitHub usernames
+- an optional current-repo open issue count pill for those users
+- cached fallback behavior when the public GitHub API fails or rate-limits
 
 ## Features
 
-- Track one GitHub org and multiple teams within that org
-- Show a GitHub-style team pill beside usernames in issue and PR comments
-- Show `[N issues]` workload pills using `org:{org} assignee:{username} is:open is:issue`
-- Refresh team membership on a configurable interval
+- Configure multiple manual groups of GitHub usernames
+- Show a GitHub-style group pill beside usernames in issue and PR comments
+- Optionally show `[N issues]` workload pills using `repo:{owner}/{repo} assignee:{username} is:open is:issue`
+- Cache public issue counts locally to reduce API churn
 - Observe dynamically added GitHub discussion content without page reloads
 
 ## Configuration
@@ -20,33 +20,36 @@ The options page stores this shape in `chrome.storage.local`:
 
 ```json
 {
-  "org": "mycompany",
-  "githubToken": "ghp_...",
-  "refreshIntervalMinutes": 15,
-  "teams": [
-    { "slug": "platform", "label": "Platform", "color": "blue" },
-    { "slug": "infra", "label": "Infra", "color": "green" }
+  "showIssueCounts": true,
+  "issueCountCacheMinutes": 30,
+  "groups": [
+    {
+      "label": "Platform",
+      "color": "blue",
+      "usernames": ["octocat", "mona-lisa"]
+    },
+    {
+      "label": "Infra",
+      "color": "green",
+      "usernames": ["hubot"]
+    }
   ]
 }
 ```
 
 Rules:
 
-- One org only in v1
-- Multiple teams supported
-- Team array order controls primary-team precedence
-- Refresh interval minimum is `5`
+- At least one group is required
+- Group order controls precedence when the same username appears in more than one group
+- Issue-count cache minimum is `5` minutes
+- Legacy PAT/org/team-slug configs are not migrated automatically; re-enter them in the new format
 
-## Token Guidance
+## Public API Notes
 
-Use the least-privilege token that can:
-
-- read the configured org team membership
-- search assigned issues in the target org
-
-For private organizations, make sure the token can see the org and the repositories whose issues you want counted.
-
-The token is stored locally in the browser extension's `chrome.storage.local`. It is not synced anywhere by this project.
+- No personal access token is required
+- Issue counts are scoped to the repository of the page you are viewing
+- Public GitHub API rate limits may temporarily suppress issue-count pills while group pills continue to render
+- Cached counts are marked stale when the latest fetch fails and an older cached value is used
 
 ## Development
 
@@ -75,7 +78,7 @@ npm test
 3. Enable Developer Mode.
 4. Choose Load unpacked.
 5. Select the generated `dist/` directory.
-6. Open the extension options page and enter your org, PAT, refresh interval, and tracked teams.
+6. Open the extension options page and enter your manual groups and cache settings.
 
 ## Supported GitHub Pages
 
@@ -88,7 +91,7 @@ Version 1 targets comment-style headers using GitHub's `.timeline-comment-header
 
 ## Failure Behavior
 
-- If a user is not on a tracked team, no badge is shown.
-- If the GitHub API fails and cached data exists, cached values render with stale styling.
-- If the GitHub API fails and no cache exists, the page shows a clear error banner.
-- Membership refresh is handled in the background service worker with `chrome.alarms`.
+- If a user is not in a configured group, no badge is shown.
+- If the GitHub API fails and cached counts exist, cached values render with stale styling.
+- If the GitHub API fails and no cached count exists, only the group pill renders.
+- If the extension is not configured, the page shows a clear error banner.

@@ -1,6 +1,6 @@
 import type { SyncStatus, TeamColor, UserBadgeData } from "../shared/types";
 
-const SUPPORTED_PAGE_PATTERN = /^\/[^/]+\/[^/]+\/(?:issues|pull)\/\d+$/;
+const SUPPORTED_PAGE_PATTERN = /^\/([^/]+)\/([^/]+)\/(?:issues|pull)\/\d+$/;
 const BANNER_ID = "team-pilled-banner";
 const LEGACY_HEADER_SELECTOR = ".timeline-comment-header";
 const MODERN_HEADER_SELECTOR = "[class*='IssueBodyHeader-module__IssueBodyHeaderContainer__']";
@@ -8,8 +8,7 @@ const MODERN_AUTHOR_SELECTOR = "[class*='IssueBodyHeaderAuthor-module__authorLog
 const MODERN_BADGE_GROUP_SELECTOR = "[class*='IssueBodyHeader-module__badgeGroup__']";
 const MODERN_BADGES_SECTION_SELECTOR = "[class*='IssueBodyHeader-module__badgesSection__']";
 const MODERN_DATE_SELECTOR = "[class*='IssueBodyHeader-module__dateLink__']";
-const MODERN_TITLE_SECTION_SELECTOR =
-  "[class*='IssueBodyHeader-module__titleSection__'], [class*='ActivityHeader-module__activityHeader__']";
+const MODERN_TITLE_SECTION_SELECTOR = "[class*='IssueBodyHeader-module__titleSection__']";
 
 export const TEAM_COLOR_CLASS_MAP: Record<TeamColor, string> = {
   gray: "team-pilled-pill--gray",
@@ -23,6 +22,19 @@ export const TEAM_COLOR_CLASS_MAP: Record<TeamColor, string> = {
 
 export function isSupportedDiscussionPage(locationLike: Pick<Location, "pathname">): boolean {
   return SUPPORTED_PAGE_PATTERN.test(locationLike.pathname);
+}
+
+export function parseRepoContext(locationLike: Pick<Location, "pathname">): { owner: string; name: string } | null {
+  const match = locationLike.pathname.match(SUPPORTED_PAGE_PATTERN);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    owner: decodeURIComponent(match[1]),
+    name: decodeURIComponent(match[2])
+  };
 }
 
 function getDiscussionHeaders(root: ParentNode): HTMLElement[] {
@@ -104,17 +116,14 @@ function createPill(label: string, variant: "team" | "workload", color?: TeamCol
 
   if (stale) {
     pill.classList.add("team-pilled-pill--stale");
-    pill.title = "Cached data shown because the latest GitHub API request failed.";
+    pill.title = "Cached public issue count shown because the latest GitHub API request failed.";
   }
 
   pill.textContent = label;
   return pill;
 }
 
-export function renderUserBadges(
-  root: ParentNode,
-  users: Record<string, UserBadgeData>
-): number {
+export function renderUserBadges(root: ParentNode, users: Record<string, UserBadgeData>): number {
   let rendered = 0;
 
   for (const header of getDiscussionHeaders(root)) {
@@ -137,10 +146,11 @@ export function renderUserBadges(
     group.className = "team-pilled-group";
     group.dataset.teamPilledGroup = "true";
     group.dataset.teamPilledUsername = username;
-    group.append(
-      createPill(data.primaryTeam.label, "team", data.primaryTeam.color, data.stale),
-      createPill(`[${data.openIssueCount ?? 0} issues]`, "workload", undefined, data.stale)
-    );
+    group.append(createPill(data.primaryTeam.label, "team", data.primaryTeam.color, data.stale));
+
+    if (typeof data.openIssueCount === "number") {
+      group.append(createPill(`[${data.openIssueCount} issues]`, "workload", undefined, data.stale));
+    }
 
     if (isLegacyHeader(header)) {
       const timestamp = metaRow.querySelector(".js-timestamp");
@@ -174,7 +184,7 @@ export function renderUserBadges(
 
 export function setStatusBanner(status: SyncStatus, message?: string): void {
   const existing = document.getElementById(BANNER_ID);
-  const shouldRender = status === "config_error" || status === "auth_error" || status === "rate_limited";
+  const shouldRender = status === "config_error" || status === "rate_limited";
 
   if (!shouldRender) {
     existing?.remove();
@@ -190,12 +200,14 @@ export function setStatusBanner(status: SyncStatus, message?: string): void {
   title.textContent =
     status === "config_error"
       ? "GitHub Team Visualizer is not configured."
-      : status === "auth_error"
-        ? "GitHub Team Visualizer could not reach your org data."
-        : "GitHub Team Visualizer hit the GitHub API rate limit.";
+      : "GitHub Team Visualizer hit the public GitHub API rate limit.";
 
   const body = document.createElement("span");
-  body.textContent = message ?? "Open the extension options and verify the configuration.";
+  body.textContent =
+    message ??
+    (status === "config_error"
+      ? "Open the extension options and configure at least one manual group."
+      : "Issue counts are temporarily unavailable, but manual group pills still render.");
 
   host.append(title, body);
 

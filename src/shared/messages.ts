@@ -21,6 +21,10 @@ export type GetUserBadgeDataMessage = {
   type: typeof MESSAGE_TYPES.getUserBadgeData;
   payload: {
     usernames: string[];
+    repo: {
+      owner: string;
+      name: string;
+    };
   };
 };
 

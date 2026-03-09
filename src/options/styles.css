@@ -94,23 +94,24 @@ body {
 }
 
 .config-form,
-.team-row {
+.group-row {
   display: grid;
   gap: 1rem;
 }
 
 .config-form {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: end;
 }
 
-.teams-list {
+.groups-list {
   display: grid;
   gap: 1rem;
 }
 
-.team-row {
+.group-row {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  align-items: end;
+  align-items: start;
   padding: 1rem;
   border: 1px solid var(--panel-border);
   border-radius: 18px;
@@ -118,7 +119,7 @@ body {
 }
 
 @media (prefers-color-scheme: dark) {
-  .team-row {
+  .group-row {
     background: rgba(15, 23, 42, 0.44);
   }
 }
@@ -133,34 +134,57 @@ body {
   font-weight: 700;
 }
 
+.field--checkbox {
+  align-content: start;
+}
+
+.field--checkbox input {
+  width: auto;
+  min-height: 1.1rem;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
 input,
-select {
+select,
+textarea {
   width: 100%;
   border: 1px solid var(--panel-border);
   border-radius: 14px;
   padding: 0.78rem 0.9rem;
   background: rgba(255, 255, 255, 0.68);
   color: var(--text);
+  font: inherit;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 7rem;
 }
 
 @media (prefers-color-scheme: dark) {
   input,
-  select {
+  select,
+  textarea {
     background: rgba(15, 23, 42, 0.72);
   }
 }
 
 input:focus,
 select:focus,
+textarea:focus,
 .button:focus {
   outline: 2px solid color-mix(in srgb, var(--accent) 80%, white);
   outline-offset: 2px;
 }
 
-.token-field {
-  display: grid;
-  grid-template-columns: 1fr auto;
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
+  align-items: center;
 }
 
 .button {
@@ -217,8 +241,7 @@ select:focus,
   border-color: rgba(202, 138, 4, 0.28);
 }
 
-.status-card--config_error,
-.status-card--auth_error {
+.status-card--config_error {
   border-color: rgba(185, 28, 28, 0.32);
 }
 
