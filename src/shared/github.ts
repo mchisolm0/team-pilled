@@ -12,27 +12,19 @@ export class GitHubApiError extends Error {
   }
 }
 
-export function buildIssueCountQuery(org: string, username: string): string {
-  return `org:${org} assignee:${username} is:open is:issue`;
+export function buildIssueCountQuery(owner: string, repo: string, username: string): string {
+  return `repo:${owner}/${repo} assignee:${username} is:open is:issue`;
 }
 
-export function buildTeamMembersUrl(org: string, teamSlug: string): string {
-  return `https://api.github.com/orgs/${encodeURIComponent(org)}/teams/${encodeURIComponent(teamSlug)}/members?per_page=100`;
-}
-
-export function buildIssueCountUrl(org: string, username: string): string {
-  const query = encodeURIComponent(buildIssueCountQuery(org, username));
+export function buildIssueCountUrl(owner: string, repo: string, username: string): string {
+  const query = encodeURIComponent(buildIssueCountQuery(owner, repo, username));
   return `https://api.github.com/search/issues?q=${query}&per_page=1`;
 }
 
-export function getPrimaryTeamForUser(
-  username: string,
-  teams: TeamConfig[],
-  teamMembership: Map<string, Set<string>>
-): TeamConfig | undefined {
+export function getPrimaryTeamForUser(username: string, teams: TeamConfig[]): TeamConfig | undefined {
   const normalized = username.toLowerCase();
 
-  return teams.find((team) => teamMembership.get(team.slug)?.has(normalized));
+  return teams.find((team) => team.usernames.includes(normalized));
 }
 
 export async function parseGitHubJson<T>(response: Response): Promise<T> {

@@ -1,23 +1,19 @@
-import { MESSAGE_TYPES } from "../shared/messages";
-import { DEFAULT_REFRESH_INTERVAL_MINUTES, TEAM_COLOR_OPTIONS, validateConfig, type ExtensionConfig } from "../shared/types";
+import { MESSAGE_TYPES, type RuntimeMessage } from "../shared/messages";
+import { DEFAULT_ISSUE_COUNT_CACHE_MINUTES, TEAM_COLOR_OPTIONS, validateConfig, type ExtensionConfig, type SyncState } from "../shared/types";
 
 type SaveResponse = {
   ok: boolean;
   message?: string;
 };
 
-type SyncState = {
-  status: "ok" | "degraded" | "config_error" | "auth_error" | "rate_limited";
-  message?: string;
-  updatedAt: number;
-};
-
 const form = document.getElementById("config-form") as HTMLFormElement;
-const teamsList = document.getElementById("teams-list") as HTMLDivElement;
-const template = document.getElementById("team-row-template") as HTMLTemplateElement;
+const groupsList = document.getElementById("groups-list") as HTMLDivElement;
+const template = document.getElementById("group-row-template") as HTMLTemplateElement;
 const statusCard = document.getElementById("status-card") as HTMLDivElement;
+const showIssueCountsField = document.getElementById("show-issue-counts") as HTMLInputElement;
+const issueCountCacheMinutesField = document.getElementById("issue-count-cache-minutes") as HTMLInputElement;
 
-function sendMessage<T>(message: unknown): Promise<T> {
+function sendMessage<T>(message: RuntimeMessage): Promise<T> {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(message, (response) => {
       const error = chrome.runtime.lastError;
@@ -32,67 +28,104 @@ function sendMessage<T>(message: unknown): Promise<T> {
   });
 }
 
-function createTeamRow(team?: ExtensionConfig["teams"][number]): HTMLElement {
+function moveRow(row: HTMLElement, direction: -1 | 1): void {
+  const sibling = direction < 0 ? row.previousElementSibling : row.nextElementSibling;
+
+  if (!sibling || !row.parentElement) {
+    return;
+  }
+
+  if (direction < 0) {
+    row.parentElement.insertBefore(row, sibling);
+  } else {
+    row.parentElement.insertBefore(sibling, row);
+  }
+}
+
+function titleCase(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function createGroupRow(group?: ExtensionConfig["groups"][number]): HTMLElement {
   const fragment = template.content.cloneNode(true) as DocumentFragment;
-  const row = fragment.querySelector<HTMLElement>(".team-row");
+  const row = fragment.querySelector<HTMLElement>(".group-row");
 
   if (!row) {
-    throw new Error("Missing team row template.");
+    throw new Error("Missing group row template.");
   }
 
   const colorSelect = row.querySelector<HTMLSelectElement>('select[data-field="color"]');
+
   if (!colorSelect) {
-    throw new Error("Missing team color select.");
+    throw new Error("Missing group color select.");
   }
 
-  colorSelect.innerHTML = TEAM_COLOR_OPTIONS.map((color) => `<option value="${color}">${color}</option>`).join("");
+  colorSelect.innerHTML = TEAM_COLOR_OPTIONS.map((color) => `<option value="${color}">${titleCase(color)}</option>`).join("");
 
-  const slugInput = row.querySelector<HTMLInputElement>('input[data-field="slug"]');
   const labelInput = row.querySelector<HTMLInputElement>('input[data-field="label"]');
-  if (slugInput) {
-    slugInput.value = team?.slug ?? "";
-  }
+  const usernamesInput = row.querySelector<HTMLTextAreaElement>('textarea[data-field="usernames"]');
+
   if (labelInput) {
-    labelInput.value = team?.label ?? "";
+    labelInput.value = group?.label ?? "";
   }
-  colorSelect.value = team?.color ?? "gray";
+
+  if (usernamesInput) {
+    usernamesInput.value = group?.usernames.join("\n") ?? "";
+  }
+
+  colorSelect.value = group?.color ?? "gray";
+
+  row.querySelector<HTMLButtonElement>('[data-action="move-up"]')?.addEventListener("click", () => {
+    moveRow(row, -1);
+  });
+
+  row.querySelector<HTMLButtonElement>('[data-action="move-down"]')?.addEventListener("click", () => {
+    moveRow(row, 1);
+  });
 
   row.querySelector<HTMLButtonElement>('[data-action="remove"]')?.addEventListener("click", () => {
     row.remove();
+
+    if (!groupsList.children.length) {
+      groupsList.append(createGroupRow());
+    }
   });
 
   return row;
 }
 
+function parseUsernames(value: string): string[] {
+  return value
+    .split(/[\n,]/)
+    .map((username) => username.trim())
+    .filter(Boolean);
+}
+
 function readConfigFromForm(): ExtensionConfig {
-  const teamRows = [...teamsList.querySelectorAll<HTMLElement>(".team-row")];
+  const groupRows = [...groupsList.querySelectorAll<HTMLElement>(".group-row")];
 
   return {
-    org: (document.getElementById("org") as HTMLInputElement).value,
-    githubToken: (document.getElementById("github-token") as HTMLInputElement).value,
-    refreshIntervalMinutes: Number((document.getElementById("refresh-interval") as HTMLInputElement).value),
-    teams: teamRows.map((row) => ({
-      slug: row.querySelector<HTMLInputElement>('input[data-field="slug"]')?.value ?? "",
+    showIssueCounts: showIssueCountsField.checked,
+    issueCountCacheMinutes: Number(issueCountCacheMinutesField.value),
+    groups: groupRows.map((row) => ({
       label: row.querySelector<HTMLInputElement>('input[data-field="label"]')?.value ?? "",
-      color: (row.querySelector<HTMLSelectElement>('select[data-field="color"]')?.value ?? "gray") as ExtensionConfig["teams"][number]["color"]
+      color: (row.querySelector<HTMLSelectElement>('select[data-field="color"]')?.value ?? "gray") as ExtensionConfig["groups"][number]["color"],
+      usernames: parseUsernames(row.querySelector<HTMLTextAreaElement>('textarea[data-field="usernames"]')?.value ?? "")
     }))
   };
 }
 
 function renderConfig(config: Partial<ExtensionConfig> | null): void {
-  (document.getElementById("org") as HTMLInputElement).value = config?.org ?? "";
-  (document.getElementById("github-token") as HTMLInputElement).value = config?.githubToken ?? "";
-  (document.getElementById("refresh-interval") as HTMLInputElement).value = String(
-    config?.refreshIntervalMinutes ?? DEFAULT_REFRESH_INTERVAL_MINUTES
-  );
-  teamsList.innerHTML = "";
+  showIssueCountsField.checked = config?.showIssueCounts ?? true;
+  issueCountCacheMinutesField.value = String(config?.issueCountCacheMinutes ?? DEFAULT_ISSUE_COUNT_CACHE_MINUTES);
+  groupsList.innerHTML = "";
 
-  for (const team of config?.teams ?? []) {
-    teamsList.append(createTeamRow(team));
+  for (const group of config?.groups ?? []) {
+    groupsList.append(createGroupRow(group));
   }
 
-  if (!teamsList.children.length) {
-    teamsList.append(createTeamRow());
+  if (!groupsList.children.length) {
+    groupsList.append(createGroupRow());
   }
 }
 
@@ -101,12 +134,17 @@ function renderStatus(status: SyncState["status"], message: string, updatedAt?: 
   statusCard.innerHTML = "";
 
   const title = document.createElement("strong");
-  title.textContent = status.replaceAll("_", " ");
+  title.textContent =
+    status === "ok"
+      ? "Saved"
+      : status === "config_error"
+        ? "Configuration error"
+        : status === "rate_limited"
+          ? "Rate limited"
+          : "Needs attention";
 
   const body = document.createElement("p");
-  body.textContent = updatedAt
-    ? `${message} Last updated ${new Date(updatedAt).toLocaleString()}.`
-    : message;
+  body.textContent = updatedAt ? `${message} Last updated ${new Date(updatedAt).toLocaleString()}.` : message;
 
   statusCard.append(title, body);
 }
@@ -140,24 +178,17 @@ async function save(): Promise<void> {
     return;
   }
 
+  renderConfig(validation.config);
   const syncState = await sendMessage<SyncState>({ type: MESSAGE_TYPES.getSyncStatus });
   renderStatus(syncState.status, syncState.message ?? "Configuration saved.", syncState.updatedAt);
 }
 
-document.getElementById("add-team")?.addEventListener("click", () => {
-  teamsList.append(createTeamRow());
+document.getElementById("add-group")?.addEventListener("click", () => {
+  groupsList.append(createGroupRow());
 });
 
 document.getElementById("save-config")?.addEventListener("click", () => {
   void save();
-});
-
-document.getElementById("toggle-token")?.addEventListener("click", (event) => {
-  const button = event.currentTarget as HTMLButtonElement;
-  const input = document.getElementById("github-token") as HTMLInputElement;
-  const nextType = input.type === "password" ? "text" : "password";
-  input.type = nextType;
-  button.textContent = nextType === "password" ? "Show" : "Hide";
 });
 
 form.addEventListener("submit", (event) => {

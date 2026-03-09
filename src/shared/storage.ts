@@ -1,15 +1,11 @@
 import type { CacheRecord, ExtensionConfig, SyncState } from "./types";
-import { DEFAULT_REFRESH_INTERVAL_MINUTES, MIN_REFRESH_INTERVAL_MINUTES } from "./types";
+import { DEFAULT_ISSUE_COUNT_CACHE_MINUTES, MIN_ISSUE_COUNT_CACHE_MINUTES } from "./types";
 
 const CONFIG_KEY = "config";
 const SYNC_STATE_KEY = "sync-state";
 
-export function membershipCacheKey(org: string, teamSlug: string): string {
-  return `membership:${org}:${teamSlug}`;
-}
-
-export function workloadCacheKey(org: string, username: string): string {
-  return `workload:${org}:${username.toLowerCase()}`;
+export function workloadCacheKey(owner: string, repo: string, username: string): string {
+  return `workload:${owner.toLowerCase()}:${repo.toLowerCase()}:${username.toLowerCase()}`;
 }
 
 export function isExpired(record: CacheRecord<unknown> | null | undefined, ttlMinutes: number): boolean {
@@ -67,9 +63,9 @@ export async function saveSyncState(syncState: SyncState): Promise<void> {
   await setOne(SYNC_STATE_KEY, syncState);
 }
 
-export function getRefreshIntervalMinutes(config?: Partial<ExtensionConfig> | null): number {
+export function getIssueCountCacheMinutes(config?: Partial<ExtensionConfig> | null): number {
   return Math.max(
-    MIN_REFRESH_INTERVAL_MINUTES,
-    Math.floor(config?.refreshIntervalMinutes ?? DEFAULT_REFRESH_INTERVAL_MINUTES)
+    MIN_ISSUE_COUNT_CACHE_MINUTES,
+    Math.floor(config?.issueCountCacheMinutes ?? DEFAULT_ISSUE_COUNT_CACHE_MINUTES)
   );
 }

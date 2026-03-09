@@ -1,6 +1,12 @@
 import type { RuntimeMessage, UserBadgeDataResponse } from "../shared/messages";
 import type { SyncState } from "../shared/types";
-import { collectDiscussionUsernames, isSupportedDiscussionPage, renderUserBadges, setStatusBanner } from "./dom";
+import {
+  collectDiscussionUsernames,
+  isSupportedDiscussionPage,
+  parseRepoContext,
+  renderUserBadges,
+  setStatusBanner
+} from "./dom";
 
 const MESSAGE_TYPES = {
   getUserBadgeData: "GET_USER_BADGE_DATA",
@@ -32,6 +38,13 @@ async function refreshAnnotations(): Promise<void> {
     return;
   }
 
+  const repo = parseRepoContext(window.location);
+
+  if (!repo) {
+    setStatusBanner("degraded", "Could not determine the current repository.");
+    return;
+  }
+
   const usernames = collectDiscussionUsernames(document);
 
   if (usernames.length === 0) {
@@ -42,7 +55,7 @@ async function refreshAnnotations(): Promise<void> {
 
   const response = await sendMessage<UserBadgeDataResponse>({
     type: MESSAGE_TYPES.getUserBadgeData,
-    payload: { usernames }
+    payload: { usernames, repo }
   });
 
   const rendered = renderUserBadges(document, response.users);

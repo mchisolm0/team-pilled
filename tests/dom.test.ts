@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { collectDiscussionUsernames, renderUserBadges } from "../src/content/dom";
+import { collectDiscussionUsernames, parseRepoContext, renderUserBadges, setStatusBanner } from "../src/content/dom";
 import {
   dynamicCommentFixture,
   issueCommentFixture,
+  modernActivityCommentFixture,
   modernIssueHeaderFixture,
   prBodyFixture,
   reviewCommentFixture
@@ -14,13 +15,21 @@ describe("content DOM rendering", () => {
     expect(collectDiscussionUsernames(document)).toEqual(["mchisolm0", "octocat", "reviewer"]);
   });
 
+  it("parses repository context from supported GitHub issue URLs", () => {
+    expect(parseRepoContext({ pathname: "/openai/team-pilled/issues/42" })).toEqual({
+      owner: "openai",
+      name: "team-pilled"
+    });
+    expect(parseRepoContext({ pathname: "/openai/team-pilled/wiki" })).toBeNull();
+  });
+
   it("inserts pills after existing badges and before the timestamp", () => {
     document.body.innerHTML = issueCommentFixture;
 
     const rendered = renderUserBadges(document, {
       mchisolm0: {
         username: "mchisolm0",
-        primaryTeam: { slug: "platform", label: "Platform", color: "blue" },
+        primaryTeam: { label: "Platform", color: "blue", usernames: ["mchisolm0"] },
         openIssueCount: 12,
         stale: false
       }
@@ -30,12 +39,35 @@ describe("content DOM rendering", () => {
     const group = metaRow?.querySelector<HTMLElement>("[data-team-pilled-group='true']");
     const collaborator = metaRow?.querySelector(".Label:not(.team-pilled-pill)");
     const timestamp = metaRow?.querySelector(".js-timestamp");
+    const pills = metaRow?.querySelectorAll(".team-pilled-pill");
 
     expect(rendered).toBe(1);
     expect(group?.textContent).toContain("Platform");
-    expect(group?.textContent).toContain("[12 issues]");
+    expect(group?.textContent).toContain("12");
+    expect(group?.textContent).not.toContain("issues");
+    expect(pills).toHaveLength(1);
     expect(collaborator?.compareDocumentPosition(group as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(group?.compareDocumentPosition(timestamp as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("renders only the group pill when the issue count is unavailable", () => {
+    document.body.innerHTML = prBodyFixture;
+
+    const rendered = renderUserBadges(document, {
+      octocat: {
+        username: "octocat",
+        primaryTeam: { label: "Platform", color: "blue", usernames: ["octocat"] },
+        stale: false
+      }
+    });
+
+    const group = document.querySelector<HTMLElement>("[data-team-pilled-group='true']");
+    const pills = document.querySelectorAll(".team-pilled-pill");
+
+    expect(rendered).toBe(1);
+    expect(group?.textContent).toContain("Platform");
+    expect(group?.textContent).not.toContain("issues");
+    expect(pills).toHaveLength(1);
   });
 
   it("does not duplicate pills across repeated renders and handles dynamically added comments", () => {
@@ -44,14 +76,13 @@ describe("content DOM rendering", () => {
     const users = {
       octocat: {
         username: "octocat",
-        primaryTeam: { slug: "platform", label: "Platform", color: "blue" },
+        primaryTeam: { label: "Platform", color: "blue", usernames: ["octocat"] },
         openIssueCount: 3,
         stale: false
       },
       latecomer: {
         username: "latecomer",
-        primaryTeam: { slug: "infra", label: "Infra", color: "green" },
-        openIssueCount: 8,
+        primaryTeam: { label: "Infra", color: "green", usernames: ["latecomer"] },
         stale: true
       }
     };
@@ -67,23 +98,59 @@ describe("content DOM rendering", () => {
     expect(document.body.textContent).toContain("Infra");
   });
 
-  it("renders into the modern issue viewer badge group", () => {
+  it("renders into the modern issue viewer badge group and updates rate-limit banner copy", () => {
     document.body.innerHTML = modernIssueHeaderFixture;
 
     const rendered = renderUserBadges(document, {
       mchisolm0: {
         username: "mchisolm0",
-        primaryTeam: { slug: "reviewers", label: "Reviewers", color: "green" },
+        primaryTeam: { label: "Reviewers", color: "green", usernames: ["mchisolm0"] },
         openIssueCount: 4,
         stale: false
       }
     });
+    setStatusBanner("rate_limited", "Rate limited.");
 
     const badgeGroup = document.querySelector("[class*='IssueBodyHeader-module__badgeGroup__']");
+    const banner = document.getElementById("team-pilled-banner");
 
     expect(rendered).toBe(1);
     expect(collectDiscussionUsernames(document)).toEqual(["mchisolm0"]);
     expect(badgeGroup?.textContent).toContain("Reviewers");
-    expect(badgeGroup?.textContent).toContain("[4 issues]");
+    expect(badgeGroup?.textContent).toContain("4");
+    expect(badgeGroup?.textContent).not.toContain("issues");
+    expect(badgeGroup?.querySelectorAll(".team-pilled-pill")).toHaveLength(1);
+    expect(banner?.textContent).toContain("public GitHub API rate limit");
+  });
+
+  it("renders badges into modern activity comment headers for every visible matching comment", () => {
+    document.body.innerHTML = modernActivityCommentFixture + modernActivityCommentFixture.replaceAll("mchisolm0", "octocat");
+
+    const rendered = renderUserBadges(document, {
+      mchisolm0: {
+        username: "mchisolm0",
+        primaryTeam: { label: "Platform", color: "blue", usernames: ["mchisolm0"] },
+        openIssueCount: 2,
+        stale: false
+      },
+      octocat: {
+        username: "octocat",
+        primaryTeam: { label: "Infra", color: "green", usernames: ["octocat"] },
+        stale: false
+      }
+    });
+
+    const commentHeaders = document.querySelectorAll("[class*='ActivityHeader-module__activityHeader__']");
+    const firstBadgeContainer = commentHeaders[0]?.querySelector("[class*='ActivityHeader-module__BadgesGroupContainer__']");
+    const secondBadgeContainer = commentHeaders[1]?.querySelector("[class*='ActivityHeader-module__BadgesGroupContainer__']");
+
+    expect(rendered).toBe(2);
+    expect(collectDiscussionUsernames(document)).toEqual(["mchisolm0", "octocat"]);
+    expect(firstBadgeContainer?.textContent).toContain("Platform");
+    expect(firstBadgeContainer?.textContent).toContain("2");
+    expect(firstBadgeContainer?.textContent).not.toContain("issues");
+    expect(firstBadgeContainer?.querySelectorAll(".team-pilled-pill")).toHaveLength(1);
+    expect(secondBadgeContainer?.textContent).toContain("Infra");
+    expect(secondBadgeContainer?.querySelectorAll(".team-pilled-pill")).toHaveLength(1);
   });
 });

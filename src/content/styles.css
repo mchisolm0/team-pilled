@@ -1,103 +1,142 @@
 :root {
-  --team-pilled-border: color-mix(in srgb, var(--color-border-default, #d0d7de) 88%, transparent);
-  --team-pilled-bg: color-mix(in srgb, var(--color-canvas-subtle, #f6f8fa) 90%, transparent);
-  --team-pilled-text: var(--color-fg-default, #1f2328);
-  --team-pilled-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --team-pilled-surface: color-mix(in srgb, var(--color-canvas-subtle, #161b22) 94%, rgba(255, 255, 255, 0.03));
+  --team-pilled-surface-strong: color-mix(in srgb, var(--color-canvas-inset, #0d1117) 92%, rgba(255, 255, 255, 0.02));
+  --team-pilled-border: color-mix(in srgb, var(--color-border-default, #30363d) 88%, rgba(255, 255, 255, 0.06));
+  --team-pilled-text: var(--color-fg-default, #f0f6fc);
+  --team-pilled-muted: color-mix(in srgb, var(--color-fg-muted, #8b949e) 84%, white 16%);
+  --team-pilled-shadow: none;
 }
 
 .team-pilled-group {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.45rem;
   margin-inline: 0.45rem;
 }
 
 .team-pilled-pill {
-  border: 1px solid var(--team-pilled-border);
-  background: var(--team-pilled-bg);
-  color: var(--team-pilled-text);
+  --team-pilled-accent: rgba(148, 163, 184, 0.92);
+  --team-pilled-bg-tint: rgba(148, 163, 184, 0.08);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.35rem;
+  padding: 0.08rem 0.52rem 0.08rem 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--team-pilled-accent) 34%, var(--team-pilled-border));
   border-radius: 999px;
-  padding: 0.1rem 0.5rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent),
+    linear-gradient(90deg, var(--team-pilled-bg-tint), transparent 60%),
+    var(--team-pilled-surface);
+  color: var(--team-pilled-text);
+  box-shadow: var(--team-pilled-shadow);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.01em;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.team-pilled-pill--workload {
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-accent-subtle, #ddf4ff) 55%, transparent), transparent),
-    var(--team-pilled-bg);
+.team-pilled-pill::before {
+  content: "";
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: var(--team-pilled-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--team-pilled-accent) 24%, transparent);
+  flex: 0 0 auto;
 }
 
 .team-pilled-pill--gray {
-  background:
-    linear-gradient(135deg, rgba(107, 114, 128, 0.18), transparent),
-    var(--team-pilled-bg);
+  --team-pilled-accent: rgba(148, 163, 184, 0.9);
+  --team-pilled-bg-tint: rgba(148, 163, 184, 0.08);
 }
 
 .team-pilled-pill--blue {
-  background:
-    linear-gradient(135deg, rgba(9, 105, 218, 0.22), transparent),
-    var(--team-pilled-bg);
+  --team-pilled-accent: rgba(96, 165, 250, 0.94);
+  --team-pilled-bg-tint: rgba(96, 165, 250, 0.08);
 }
 
 .team-pilled-pill--green {
-  background:
-    linear-gradient(135deg, rgba(31, 136, 61, 0.24), transparent),
-    var(--team-pilled-bg);
+  --team-pilled-accent: rgba(74, 222, 128, 0.94);
+  --team-pilled-bg-tint: rgba(74, 222, 128, 0.08);
 }
 
 .team-pilled-pill--yellow {
-  background:
-    linear-gradient(135deg, rgba(191, 135, 0, 0.24), transparent),
-    var(--team-pilled-bg);
+  --team-pilled-accent: rgba(250, 204, 21, 0.92);
+  --team-pilled-bg-tint: rgba(250, 204, 21, 0.08);
 }
 
 .team-pilled-pill--orange {
-  background:
-    linear-gradient(135deg, rgba(188, 76, 0, 0.24), transparent),
-    var(--team-pilled-bg);
+  --team-pilled-accent: rgba(251, 146, 60, 0.94);
+  --team-pilled-bg-tint: rgba(251, 146, 60, 0.08);
 }
 
 .team-pilled-pill--red {
-  background:
-    linear-gradient(135deg, rgba(207, 34, 46, 0.24), transparent),
-    var(--team-pilled-bg);
+  --team-pilled-accent: rgba(248, 113, 113, 0.94);
+  --team-pilled-bg-tint: rgba(248, 113, 113, 0.08);
 }
 
 .team-pilled-pill--pink {
-  background:
-    linear-gradient(135deg, rgba(191, 57, 137, 0.24), transparent),
-    var(--team-pilled-bg);
+  --team-pilled-accent: rgba(244, 114, 182, 0.94);
+  --team-pilled-bg-tint: rgba(244, 114, 182, 0.08);
 }
 
 .team-pilled-pill--stale {
-  opacity: 0.84;
+  opacity: 0.82;
+  filter: saturate(0.82);
 }
 
 .team-pilled-banner {
+  --team-pilled-banner-accent: rgba(255, 211, 111, 0.92);
+
   position: sticky;
   top: 0;
   z-index: 120;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  margin: 0 0 1rem;
-  border-bottom: 1px solid var(--team-pilled-border);
+  gap: 0.8rem;
+  max-width: min(1100px, calc(100% - 1.5rem));
+  margin: 0 auto 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--team-pilled-banner-accent) 38%, var(--team-pilled-border));
+  border-radius: 0 0 22px 22px;
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.12), transparent 34%),
-    linear-gradient(90deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9));
-  color: #f8fafc;
-  box-shadow: var(--team-pilled-shadow);
+    radial-gradient(circle at top left, color-mix(in srgb, var(--team-pilled-banner-accent) 18%, transparent), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent),
+    var(--team-pilled-surface-strong);
+  color: var(--team-pilled-text);
+  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.2);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.team-pilled-banner::before {
+  content: "";
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+  background: var(--team-pilled-banner-accent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--team-pilled-banner-accent) 16%, transparent);
+  flex: 0 0 auto;
 }
 
 .team-pilled-banner strong {
   font-size: 13px;
+  letter-spacing: 0.01em;
 }
 
 .team-pilled-banner span {
   font-size: 12px;
-  opacity: 0.88;
+  color: var(--team-pilled-muted);
+}
+
+.team-pilled-banner--config_error {
+  --team-pilled-banner-accent: rgba(248, 113, 113, 0.94);
+}
+
+.team-pilled-banner--rate_limited {
+  --team-pilled-banner-accent: rgba(250, 204, 21, 0.94);
 }

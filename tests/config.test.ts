@@ -2,34 +2,70 @@ import { describe, expect, it } from "vitest";
 import { validateConfig } from "../src/shared/types";
 
 describe("validateConfig", () => {
-  it("accepts a valid config and clamps refresh interval to the minimum", () => {
+  it("accepts a valid manual-group config and clamps the cache TTL to the minimum", () => {
     const result = validateConfig({
-      org: "openai",
-      githubToken: "ghp_test",
-      refreshIntervalMinutes: 3,
-      teams: [{ slug: "platform", label: "Platform", color: "blue" }]
+      showIssueCounts: true,
+      issueCountCacheMinutes: 3,
+      groups: [{ label: "Platform", color: "blue", usernames: ["Octocat", " octocat ", "hubot"] }]
     });
 
     expect(result.valid).toBe(true);
     if (result.valid) {
-      expect(result.config.refreshIntervalMinutes).toBe(5);
+      expect(result.config.issueCountCacheMinutes).toBe(5);
+      expect(result.config.groups[0].usernames).toEqual(["octocat", "hubot"]);
     }
   });
 
-  it("rejects duplicate team slugs", () => {
+  it("rejects configs without groups", () => {
     const result = validateConfig({
-      org: "openai",
-      githubToken: "ghp_test",
-      refreshIntervalMinutes: 15,
-      teams: [
-        { slug: "platform", label: "Platform", color: "blue" },
-        { slug: "platform", label: "Platform 2", color: "green" }
-      ]
+      showIssueCounts: true,
+      issueCountCacheMinutes: 30,
+      groups: []
     });
 
     expect(result.valid).toBe(false);
     if (!result.valid) {
-      expect(result.message).toContain("Duplicate team slug");
+      expect(result.message).toContain("At least one group");
+    }
+  });
+
+  it("rejects groups without a label or usernames", () => {
+    const missingLabel = validateConfig({
+      showIssueCounts: true,
+      issueCountCacheMinutes: 30,
+      groups: [{ label: "", color: "blue", usernames: ["octocat"] }]
+    });
+    const missingUsers = validateConfig({
+      showIssueCounts: true,
+      issueCountCacheMinutes: 30,
+      groups: [{ label: "Platform", color: "blue", usernames: ["   "] }]
+    });
+
+    expect(missingLabel.valid).toBe(false);
+    expect(missingUsers.valid).toBe(false);
+  });
+
+  it("allows duplicate usernames across groups", () => {
+    const duplicates = validateConfig({
+      showIssueCounts: true,
+      issueCountCacheMinutes: 30,
+      groups: [
+        { label: "Platform", color: "blue", usernames: ["octocat"] },
+        { label: "Infra", color: "green", usernames: ["octocat"] }
+      ]
+    });
+
+    expect(duplicates.valid).toBe(true);
+  });
+
+  it("rejects legacy config", () => {
+    const legacy = validateConfig({
+      org: "openai"
+    } as never);
+
+    expect(legacy.valid).toBe(false);
+    if (!legacy.valid) {
+      expect(legacy.message).toContain("Legacy configuration");
     }
   });
 });

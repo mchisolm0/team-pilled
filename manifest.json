@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "GitHub Team Visualizer",
   "version": "0.1.0",
-  "description": "Adds GitHub team badges and org-scoped open issue counts to issue and pull request discussions.",
-  "permissions": ["storage", "alarms"],
+  "description": "Adds manual GitHub group badges and public repo issue counts to issue and pull request discussions.",
+  "permissions": ["storage"],
   "host_permissions": ["https://github.com/*", "https://api.github.com/*"],
   "background": {
     "service_worker": "background.js",

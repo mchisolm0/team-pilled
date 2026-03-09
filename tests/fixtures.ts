@@ -81,3 +81,17 @@ export const modernIssueHeaderFixture = `
     </div>
   </div>
 `;
+
+export const modernActivityCommentFixture = `
+  <div class="ActivityHeader-module__activityHeader__ZGlyB">
+    <div class="ActivityHeader-module__headerRow__jKlmn">
+      <a class="ActivityHeader-module__AuthorName__VJr9h" href="/mchisolm0">mchisolm0</a>
+      <span>commented</span>
+      <a href="#issuecomment-6">2 weeks ago</a>
+    </div>
+    <div class="ActivityHeader-module__BadgesGroupContainer__W2UYE">
+      <span class="Label">Collaborator</span>
+      <span class="Label">Author</span>
+    </div>
+  </div>
+`;
