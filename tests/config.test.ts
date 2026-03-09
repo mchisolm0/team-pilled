@@ -45,7 +45,7 @@ describe("validateConfig", () => {
     expect(missingUsers.valid).toBe(false);
   });
 
-  it("accepts duplicate usernames across groups and rejects legacy config", () => {
+  it("allows duplicate usernames across groups", () => {
     const duplicates = validateConfig({
       showIssueCounts: true,
       issueCountCacheMinutes: 30,
@@ -54,11 +54,15 @@ describe("validateConfig", () => {
         { label: "Infra", color: "green", usernames: ["octocat"] }
       ]
     });
+
+    expect(duplicates.valid).toBe(true);
+  });
+
+  it("rejects legacy config", () => {
     const legacy = validateConfig({
       org: "openai"
     } as never);
 
-    expect(duplicates.valid).toBe(true);
     expect(legacy.valid).toBe(false);
     if (!legacy.valid) {
       expect(legacy.message).toContain("Legacy configuration");

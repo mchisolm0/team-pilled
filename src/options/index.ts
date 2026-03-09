@@ -1,14 +1,9 @@
-import { DEFAULT_ISSUE_COUNT_CACHE_MINUTES, TEAM_COLOR_OPTIONS, validateConfig, type ExtensionConfig } from "../shared/types";
+import { MESSAGE_TYPES, type RuntimeMessage } from "../shared/messages";
+import { DEFAULT_ISSUE_COUNT_CACHE_MINUTES, TEAM_COLOR_OPTIONS, validateConfig, type ExtensionConfig, type SyncState } from "../shared/types";
 
 type SaveResponse = {
   ok: boolean;
   message?: string;
-};
-
-type SyncState = {
-  status: "ok" | "degraded" | "config_error" | "rate_limited";
-  message?: string;
-  updatedAt: number;
 };
 
 const form = document.getElementById("config-form") as HTMLFormElement;
@@ -18,7 +13,7 @@ const statusCard = document.getElementById("status-card") as HTMLDivElement;
 const showIssueCountsField = document.getElementById("show-issue-counts") as HTMLInputElement;
 const issueCountCacheMinutesField = document.getElementById("issue-count-cache-minutes") as HTMLInputElement;
 
-function sendMessage<T>(message: unknown): Promise<T> {
+function sendMessage<T>(message: RuntimeMessage): Promise<T> {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(message, (response) => {
       const error = chrome.runtime.lastError;
@@ -156,8 +151,8 @@ function renderStatus(status: SyncState["status"], message: string, updatedAt?: 
 
 async function loadInitialState(): Promise<void> {
   const [config, syncState] = await Promise.all([
-    sendMessage<ExtensionConfig | null>({ type: "LOAD_CONFIG" }),
-    sendMessage<SyncState>({ type: "GET_SYNC_STATUS" })
+    sendMessage<ExtensionConfig | null>({ type: MESSAGE_TYPES.loadConfig }),
+    sendMessage<SyncState>({ type: MESSAGE_TYPES.getSyncStatus })
   ]);
 
   renderConfig(config);
@@ -174,7 +169,7 @@ async function save(): Promise<void> {
   }
 
   const response = await sendMessage<SaveResponse>({
-    type: "SAVE_CONFIG",
+    type: MESSAGE_TYPES.saveConfig,
     payload: validation.config
   });
 
@@ -184,7 +179,7 @@ async function save(): Promise<void> {
   }
 
   renderConfig(validation.config);
-  const syncState = await sendMessage<SyncState>({ type: "GET_SYNC_STATUS" });
+  const syncState = await sendMessage<SyncState>({ type: MESSAGE_TYPES.getSyncStatus });
   renderStatus(syncState.status, syncState.message ?? "Configuration saved.", syncState.updatedAt);
 }
 

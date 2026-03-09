@@ -42,7 +42,7 @@ Rules:
 - At least one group is required
 - Group order controls precedence when the same username appears in more than one group
 - Issue-count cache minimum is `5` minutes
-- Legacy PAT/org/team-slug configs are not migrated automatically; re-enter them in the new format
+- Legacy PAT/org/team-slug configs are not migrated automatically; after upgrading, GitHub pages show a configuration error banner and badge rendering stays blocked until you re-enter the new group-based settings, save them, and reload or reopen the discussion page
 
 ## Public API Notes
 
@@ -91,7 +91,7 @@ Version 1 targets comment-style headers using GitHub's `.timeline-comment-header
 
 ## Failure Behavior
 
-- If a user is not in a configured group, no badge is shown.
-- If the GitHub API fails and cached counts exist, cached values render with stale styling.
-- If the GitHub API fails and no cached count exists, only the group pill renders.
-- If the extension is not configured, the page shows a clear error banner.
+- No badge is shown when a user is not in a configured group.
+- Cached counts render with stale styling when the GitHub API fails and cached counts exist.
+- Only the group pill renders when the GitHub API fails and no cached count exists.
+- A clear error banner is shown when the extension is not configured.

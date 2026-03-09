@@ -204,7 +204,7 @@ export function renderUserBadges(root: ParentNode, users: Record<string, UserBad
 
 export function setStatusBanner(status: SyncStatus, message?: string): void {
   const existing = document.getElementById(BANNER_ID);
-  const shouldRender = status === "config_error" || status === "rate_limited";
+  const shouldRender = status === "config_error" || status === "rate_limited" || status === "degraded";
 
   if (!shouldRender) {
     existing?.remove();
